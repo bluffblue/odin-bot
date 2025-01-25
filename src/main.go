@@ -8,14 +8,16 @@ import (
 	"syscall"
 
 	cmdhandlers "discord-bot/src/commands"
+	"discord-bot/src/modals"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
 
 var (
-	BotToken string
-	GuildID  string
+	BotToken    string
+	GuildID     string
+	LogChannelID string
 )
 
 func init() {
@@ -24,104 +26,25 @@ func init() {
 	}
 	BotToken = os.Getenv("BOT_TOKEN")
 	GuildID = os.Getenv("GUILD_ID")
+	LogChannelID = os.Getenv("LOG_CHANNEL_ID")
 }
 
-var (
-	slashCommands = []*discordgo.ApplicationCommand{
-		{
-			Name:        "ban",
-			Description: "Ban a user from the server",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "user",
-					Description: "The user to ban",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "reason",
-					Description: "Reason for the ban",
-					Required:    false,
-				},
-			},
-		},
-		{
-			Name:        "unban",
-			Description: "Unban a user from the server",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "user",
-					Description: "The user to unban",
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "kick",
-			Description: "Kick a user from the server",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "user",
-					Description: "The user to kick",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "reason",
-					Description: "Reason for the kick",
-					Required:    false,
-				},
-			},
-		},
-		{
-			Name:        "warn",
-			Description: "Warn a user",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "user",
-					Description: "The user to warn",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "reason",
-					Description: "Reason for the warning",
-					Required:    false,
-				},
-			},
-		},
-		{
-			Name:        "unwarn",
-			Description: "Remove a warning from a user",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "user",
-					Description: "The user to remove warning from",
-					Required:    true,
-				},
-			},
-		},
-	}
-
-	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"ban":    cmdhandlers.HandleBan,
-		"unban":  cmdhandlers.HandleUnban,
-		"kick":   cmdhandlers.HandleKick,
-		"warn":   cmdhandlers.HandleWarn,
-		"unwarn": cmdhandlers.HandleUnwarn,
-	}
-)
+var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+	"ban":      cmdhandlers.HandleBan,
+	"unban":    cmdhandlers.HandleUnban,
+	"kick":     cmdhandlers.HandleKick,
+	"warn":     cmdhandlers.HandleWarn,
+	"unwarn":   cmdhandlers.HandleUnwarn,
+	"clearmsg": cmdhandlers.HandleClearMessages,
+}
 
 func main() {
 	dg, err := discordgo.New("Bot " + BotToken)
 	if err != nil {
 		log.Fatal("Error creating Discord session: ", err)
 	}
+
+	modals.InitLogChannel(LogChannelID)
 
 	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
@@ -136,11 +59,11 @@ func main() {
 		log.Fatal("Error opening connection: ", err)
 	}
 
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(slashCommands))
-	for i, cmd := range slashCommands {
+	registeredCommands := make([]*discordgo.ApplicationCommand, len(modals.SlashCommands))
+	for i, cmd := range modals.SlashCommands {
 		cmd, err := dg.ApplicationCommandCreate(dg.State.User.ID, GuildID, cmd)
 		if err != nil {
-			log.Printf("Error creating command %v: %v", slashCommands[i].Name, err)
+			log.Printf("Error creating command %v: %v", modals.SlashCommands[i].Name, err)
 			continue
 		}
 		registeredCommands[i] = cmd
