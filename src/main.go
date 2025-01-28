@@ -9,6 +9,7 @@ import (
 
 	cmdhandlers "discord-bot/src/commands"
 	"discord-bot/src/modals"
+	"discord-bot/src/cache"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -27,6 +28,14 @@ func init() {
 	BotToken = os.Getenv("BOT_TOKEN")
 	GuildID = os.Getenv("GUILD_ID")
 	LogChannelID = os.Getenv("LOG_CHANNEL_ID")
+
+	dg, err := discordgo.New("Bot " + BotToken)
+	if err != nil {
+		log.Fatal("Error creating Discord session: ", err)
+	}
+
+	channels := []string{"1332680730739740746", "1332681078892400674", "1332680730739740749"}
+	cache.InitializeAutoCacheCleanup(dg, GuildID, channels)
 }
 
 var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
