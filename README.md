@@ -1,6 +1,6 @@
 # Discord Moderation Bot
 
-A powerful Discord moderation bot built with Go, featuring essential moderation commands and comprehensive logging system.
+A Discord moderation bot built with Go, featuring essential moderation commands and comprehensive logging system.
 
 ## Features
 
